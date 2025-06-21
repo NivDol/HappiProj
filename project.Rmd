@@ -2,12 +2,12 @@
 title: 'Project Proposal: Happiness Report’s top tier for multiple consecutive years'
 author: "Amal Dagan, Bar Evron, Niv Dolev, Roni London"
 output:
+  html_document:
+    df_print: paged
   pdf_document:
     number_sections: true
     fig_caption: true
     latex_engine: xelatex
-  html_document:
-    df_print: paged
 ---
 
 \newpage
@@ -23,7 +23,8 @@ library(ggplot2)
 library(patchwork)
 library(caret)
 library(pROC)
-library(readxl)  # חבילה לטעינת קבצי אקסל
+library(rpart.plot)
+library(readxl)  # a libary for loading excel files
 ```
 
 # Introduction
@@ -40,8 +41,10 @@ For example, Kuppens et al. (2023) analyzed cultural factors in 78 countries bef
 Similarly, Al‐Maatouq and Al Shammari (2022) examined the relationship between WHR scores, Hofstede’s cultural dimensions, and government education spending across 58 countries. They found that countries with higher long-term orientation and lower power distance tended to score higher on the WHR, indicating possible structural links between culture and well-being. However, their study was cross-sectional and did not account for how such associations might change over time.
 Despite the value of these contributions, our research takes a unique direction. We combine an unusually broad dataset—spanning 2011 to 2024 and covering over 150 countries—with repeated-measures modeling to assess which happiness predictors remain robust over time. Unlike studies that focus on a single year or a narrow method, our approach allows us to explore both consistency and change in global well-being, providing updated and policy-relevant insights.
 
+//
 **Method & “Stability Score”**  
 A longitudinal logistic model is re-estimated for each vintage; a variable earns a stability score when its effect remains significant in all fourteen years.
+//
 
 **Contribution**  
 Turning the dataset’s continual renewal from hurdle to asset, we deliver up-to-date policy guidance and reveal whether the perennial “Top-20” countries stay happy for the same reasons or for shifting, time-dependent ones.
@@ -55,16 +58,9 @@ To address this, we plan to either: use repeated-measures models (e.g., mixed-ef
 A detailed data dictionary is included in the /data/README.md file in our repository.
 
 # Preliminary Results
-```{r loaoding data}
-# טען את קובץ הנתונים
-
-
-
-happiness_data <- read_csv("happiness_data_clean_2011_2024.csv")
-
-#glimpse(happiness_data)
-#head(happiness_data)
-#summary(happiness_data)
+```{r loading data}
+ 
+happiness_data <- read_csv("happiness_data_clean_2011_2024.csv")#load data
 
 happiness_data <- happiness_data %>%
   mutate(`Country name` = trimws(`Country name`))
@@ -79,55 +75,40 @@ happiness_data <- happiness_data %>%
     .direction = "downup"
   ) %>%
   ungroup()
-# מחיקה לדוג' של מדינות לא אמיתיות (אם יש)
+# erasure of non existent countries
 happiness_data <- happiness_data %>%
-  filter(!is.na(`Ladder score`)) # או עמודה עיקרית אחרת
-#write_csv(happiness_data, "happiness_data_clean_2011_2024.csv")
+  filter(!is.na(`Ladder score`)) # use only complete data(without null values)
 
 
 ```
-
-```{r summary, echo=FALSE, warning=FALSE, message=FALSE}
-#summary(happiness_data %>% 
-#  select(`Ladder score`, 
-#         `Explained by: Log GDP per capita`, 
-#         `Explained by: Social support`,
-#         `Explained by: Healthy life expectancy`, 
-#         `Explained by: Freedom to make life choices`))
-```
-
 
 ```{r plots-and-table, fig.width=9, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
 
 happiness_data <- happiness_data %>%
   group_by(Year) %>%
-  mutate(Top_20 = Rank <= 20) %>%
+  mutate(Top_20 = Rank <= 20) %>%# create a new top_20 column
   ungroup() %>%
+  #renaming the column in order to be usable in R
   rename(Country_name = `Country name`, Ladder_score = `Ladder score`, Log_GDP = `Explained by: Log GDP per capita`, Social_support = `Explained by: Social support`, Life_expectancy = `Explained by: Healthy life expectancy`, Freedom_of_choices = `Explained by: Freedom to make life choices`, Generosity = `Explained by: Generosity`, Dystopia_and_residual = `Dystopia + residual`, Corruption = `Explained by: Perceptions of corruption` )
 happiness_data <- happiness_data %>%
   arrange(Country_name, Year) %>%  # Sort by country and year
   group_by(Country_name) %>%      # Process each country separately
-  mutate(Top20_Last = lag(Top_20)) %>%  # Get last year's Top_20
+  mutate(Top20_Last = lag(Top_20)) %>%  # Get last year's Top_20 and create new column
   ungroup() %>%  # Remove grouping
   mutate(Top20_Last = case_when(
     is.na(Top20_Last) ~ 2,         # No previous data
     Top20_Last == 1 ~ 1,           # Was in top 20
     Top20_Last == 0 ~ 0            # Was not in top 20
   ))
-#colnames(happiness_data)
 
-# סופרים לכל מדינה בכמה שנים הייתה בטופ 20
+# count Top_20 appearences by country
 top_countries_long <- happiness_data %>%
   filter(Top_20) %>%
   count(Country_name, name = "Years_in_Top_20") %>%
   arrange(desc(Years_in_Top_20))
 
-# תצוגה - 25 הראשונות
-#print(top_countries_long, n=25)
-
-
 tpl1 <- top_countries_long %>%
-  filter(Years_in_Top_20 >= 5) %>% # תבחרי את הסף שמתאים לויזואליות
+  filter(Years_in_Top_20 >= 5) %>% 
   ggplot(aes(x = reorder(Country_name, Years_in_Top_20), y = Years_in_Top_20)) +
   geom_col(fill = "lightgreen") +
   coord_flip() +
@@ -163,17 +144,8 @@ plt <- ggplot(happiness_data, aes(x=Rank)) + geom_histogram(color="darkblue", fi
 tpl1 | plt
 ```
 
-The distribution of the number of years in the top 20 is kept pretty limited, only 14 countries have never left the top 20 spot.
+The distribution of the number of years in the top 20 is kept pretty limited, only 14 countries have never left the top 20 spots.
 This goes to show that being a top country is a perpetual title. Which means there is merit to asking this question, we think there is a pattern of data that indicates how consistent a country is at staying at the top of the list.
-
-
-#```{r plot_Ladder_score ,fig.width=15, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
-#plt1
-#```
-
-#This graph's purpose is to show that the columns are good predictors for the ladder score, and by extension being a top country. This wasn't unexpected, it's logical that an indicator of a positive trait in a country's society would impact its overall happiness. And since the ladder score is what dictates where a country is ranked, it will also probably take part in the model for our question.
-
-
 
 
 # Work Plan
@@ -181,7 +153,7 @@ This goes to show that being a top country is a perpetual title. Which means the
 The outcome is the Top-20 column and the predictors currently are all of the columns. The way we will answer the question is that we will attempt to find the most contributing variables  in order to answer the question.
 
 we will use a variety of methods to answer the question:
-SHAP variables,desicion-tree and a logistic regression model, we will attempt to build those models concurrently and to compare and contrast them.
+SHAP variables,decision-tree and a logistic regression model, we will attempt to build those models concurrently and to compare and contrast them.
 
 we would like to receive some conclusive results(the p_value of some of the variables will be significant),in all models so after comparison we could isolate the most relevant factors.
 
@@ -189,11 +161,260 @@ we would like to receive some conclusive results(the p_value of some of the vari
 - Exploratory analysis and visualization. (Roni)
 - Model building and evaluation. (Roni,Niv)
 - Interpretation of results and final reporting. (Amal,Niv)
+		
+\\\
+
+**models and fun**
+The main model: Decision Tree
+
+Like logistic regression this is also a popular model for classification problems, and since it can be visualized it is an obvious choice to be one of the models.
+
+The second model example: Logistic Regression
+
+If we're to take a classification route, then logistic regression would be a good model for that. We got good results, but again maybe too good. All of the predictors seem to be strong predictors which was good for the sake of showing that there is a correlation, but the performance was too accurate to use as the main model. 
+
+*decision tree models*
+ 
+we will create 4 diffrent tree models:
+the first model will be a decision tree including the Last_top_20 parameter and will use the chronologically split data. 
+the second model will be a decision tree without the Last_top_20 parameter and will use the chronologically split data.
+the first model will be a decision tree including the Last_top_20 parameter and will use the randomly split data. 
+the second model will be a decision tree without the Last_top_20 parameter and will use the randomly split data.
 
 
+we start with chronologically spliting the data for prior and post 2022 in an almost 80-20 split
+```{r first_data_split}
+
+# Split data
+train_data_chron <- subset(happiness_data, Year < 2022)
+test_data_chron <- subset(happiness_data, Year >= 2022)
+
+```
+*first model*
+
+the first model training including top_20_last year parameter.
+looking the important indicators corruption is the primary indicator of the tree, despite and the TOP_20_last second(showing the importance of this parameter).
+```{r first_model_training}
+
+library(rpart.plot)
+
+first_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual+Top20_Last             ,data = train_data_chron, method = "class")
+rpart.plot(first_tree_model)
+first_tree_model$variable.importance
+
+```
+
+the first tree model predictions had a nearly 98% accuracy which shows that the model is almost perfect and that the countries that were in the top 20 are likely to stay there, confirming our primary assessment,despite the Top_20_last not being the primary indicator. 
+```{r first_model_predict}
+test_data_chron$Top_20 <- as.factor(test_data_chron$Top_20)
+# Predict class labels (Top_20) for test_data
+
+predictions <- predict(first_tree_model, newdata = test_data_chron, type = "class")
+# Confusion matrix
+
+conf_matrix <- table(Predicted = predictions, Actual = test_data_chron$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+*second model*
+the second model training without the former top_20
+in the second due to the removal of the Top_20_last parameter the corruption takes an even larger part as the primary indicator in the decision making.
+
+```{r second_model_training}
+
+# Train the decision tree using rpart
+second_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_chron, method = "class")
+rpart.plot(second_tree_model)
+second_tree_model$variable.importance
+
+```
+the second model predictions which shows an 82.5% which is a good model(not perfect like the first) and shows that even without the overall scores we are able to predict with reliable accuracy the Top_20 factor.
+
+```{r second_model_predict}
+test_data_chron$Top_20 <- as.factor(test_data_chron$Top_20)
+# Predict class labels (Top_20) for test_data
+predictions <- predict(second_tree_model, newdata = test_data_chron, type = "class")
+# Confusion matrix
+conf_matrix <- table(Predicted = predictions, Actual = test_data_chron$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+we will then split the data randomly and check if the results differ.
+
+```{r second-data_split}
+
+happiness_data <- happiness_data[sample(nrow(happiness_data)), ]#take the happiness data
+sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))# split the data 80-20
+train_data_rand  <- happiness_data[sample, ]
+test_data_rand   <- happiness_data[!sample, ]
+
+```
+
+*third model*
+
+the third model training including top_20_last year parameter using randomized data.
+in this model unlike the first model(both share the same parameters) the Top20_Last and the Year parameters are the primary indicators by a landslide showing the importance of this factors for the prediction.
+
+```{r third_model_training}
+
+third_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual+Top20_Last             ,data = train_data_rand, method = "class")
+rpart.plot(third_tree_model)
+third_tree_model$variable.importance
+
+```
+
+the third model predictions which shows an 98% accraucy and knowing how the model works  shows the small movement in the top 20 range on a randomized data.
+```{r third_model_predict}
+test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
+# Predict class labels (Top_20) for test_data
+predictions <- predict(third_tree_model, newdata = test_data_rand, type = "class")
+# Confusion matrix
+conf_matrix <- table(Predicted = predictions, Actual = test_data_rand$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+*fourth model*
+
+the fourth model training without the former top_20 with the randomized data.
+in this model similarly to the second model corruption is the primary indicator with a very big margin.
+
+
+```{r fourth_model_training}
+
+fourth_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
+rpart.plot(fourth_tree_model)
+fourth_tree_model$variable.importance
+
+```
+the second model predictions which shows an 95% which shows that even despite the removal of the TOP_20_last parameter it is still relatively easy to predict the Top_20 with a past and future knowledge(unlike the second model).
+
+```{r fourth_model_predict}
+test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
+# Predict class labels (Top_20) for test_data
+predictions <- predict(fourth_tree_model, newdata = test_data_rand, type = "class")
+# Confusion matrix
+conf_matrix <- table(Predicted = predictions, Actual = test_data_rand$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+
+*logistical regression models*
+
+in this section we created two logistical regression models which differ in the  test and train data they recieve.
+
+```{r data_cleaning_logistical_regression}
+# Load required libraries
+library(dplyr)
+library(caret)
+
+null_countries <- c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana",
+                    "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
+
+happiness_data <- happiness_data %>%
+  filter(!(Country_name %in% null_countries))
+```
+
+*first logistical regression model*
+the first model uses a randomly split data and tries to use logistical regression to determine whether a country is in the top 20.
+this model is to successful at 97.5% accuracy deeming it ineffective and unreliable. 
+
+
+```{r  first logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
+
+set.seed(123)
+
+happiness_data <- happiness_data[sample(nrow(happiness_data)), ]
+sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))
+train  <- happiness_data[sample, ]
+test   <- happiness_data[!sample, ]
+
+
+
+
+
+cols <- c("Log_GDP", "Social_support", "Life_expectancy", "Freedom_of_choices", "Generosity", "Corruption", "Dystopia_and_residual")
+
+predictors <- paste(cols, collapse = " + ")
+log_formula <- as.formula(paste("Top_20 ~", predictors))
+log_formula
+
+logmodel <- glm(log_formula,
+             data = train, family = "binomial")
+#summary(logmodel)
+
+probs <- predict(logmodel, newdata = test, type = "response")
+preds <- ifelse(probs > 0.5, 1, 0)
+
+test$Top_20 <- as.integer(test$Top_20 == TRUE)
+test$preds <- preds
+
+actual <- factor(test$Top_20, levels = c(0, 1))
+predicted <- factor(test$preds, levels = c(0, 1))
+cm <- confusionMatrix(predicted, actual)
+print(cm)
+
+```
+*second model*
+the second model uses a timed split data(it uses all data before 2022 as train data and the rest as test data), and tries to use logistical regression to determine whether a country is in the top 20.
+this model as well is to successful at 96% accuracy deeming it ineffective and unreliable as well. 
+
+```{r second logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
+
+# Split data by year
+train_data <- subset(happiness_data, Year < 2022)
+test_data <- subset(happiness_data, Year >= 2022)
+
+# Ensure binary format for Top_20 in both datasets
+train_data$Top_20 <- as.integer(train_data$Top_20 == TRUE)
+test_data$Top_20 <- as.integer(test_data$Top_20 == TRUE)
+
+# Define predictor columns
+cols <- c("Log_GDP", "Social_support", "Life_expectancy",
+          "Freedom_of_choices", "Generosity", 
+          "Corruption", "Dystopia_and_residual")
+
+# Create formula dynamically
+predictors <- paste(cols, collapse = " + ")
+log_formula <- as.formula(paste("Top_20 ~", predictors))
+
+# Train logistic regression on train_data
+logmodel <- glm(log_formula, data = train_data, family = "binomial")
+
+# Predict on test_data
+probs <- predict(logmodel, newdata = test_data, type = "response")
+preds <- ifelse(probs > 0.5, 1, 0)
+
+# Add predictions to test_data
+test_data$preds <- preds
+
+# Create factors for evaluation
+actual <- factor(test_data$Top_20, levels = c(0, 1))
+predicted <- factor(test_data$preds, levels = c(0, 1))
+
+# Confusion matrix
+cm <- confusionMatrix(predicted, actual)
+print(cm)
+
+```
 \newpage
 
-Appendix\newline  
+Appendix.\newline  
 This Markdown file describes the data structure and organization for the project.\newline  
 
 we will also elaborate about the pre project data cleaning,\newline  
@@ -233,272 +454,3 @@ $ Generosity <dbl> 0.1100000, 0.0910000, 0.0930000,…\newline
 $ Corruption <dbl> 0.502000000, 0.088000000, 0.0590…\newline
 $ Dystopia_and_residual <dbl> 1.782000, 0.672000, 0.976000, 1.…\newline  
 $ Top_20 <lgl> TRUE, FALSE, FALSE, FALSE, FALSE…\newline  
-
-		
-\\\
-**models and fun**
-The main model: Decision Tree
-Like logistic regression this is also a popular model for classification problems, and since it can be visualized it is an obvious choice to be one of the models.
-
-The second model example: Logistic Regression
-If we're to take a classification route, then logistic regression would be a good model for that. We got good results, but again maybe too good. All of the predictors seem to be strong predictors which was good for the sake of showing that there is a correlation, but the performance was too accurate to use as the main model. 
-
-*desicion tree models*
- 
-we will create 4 diffrent tree models:
-the first model will be a decision tree including the Last_top_20 parameter and will use the chronologically split data. 
-the second model will be a decision tree without the Last_top_20 parameter and will use the chronologically split data.
-the first model will be a decision tree including the Last_top_20 parameter and will use the randomly split data. 
-the second model will be a decision tree without the Last_top_20 parameter and will use the randomly split data.
-
-
-we start with chronologically spliting the data for prior and post 2022 in an almost 80-20 split
-```{r}
-
-# Split data
-train_data <- subset(happiness_data, Year < 2022)
-test_data <- subset(happiness_data, Year >= 2022)
-
-# Number of rows
-train_rows <- nrow(train_data)
-test_rows <- nrow(test_data)
-total_rows <- nrow(happiness_data)
-
-# Print info
-cat("Train rows:", train_rows, "(", round(100 * train_rows / total_rows, 2), "% )\n")
-cat("Test rows :", test_rows,  "(", round(100 * test_rows / total_rows, 2), "% )\n")
-
-colnames(happiness_data)
-
-```
-*first model*
-
-the first model training including top_20_last year parameter.
-looking the important indicators corruption is the primary indicator of the tree, despite and the TOP_20_last second(showing the importance of this parameter).
-```{r}
-
-# Train the decision tree using rpart
-#install.packages("rpart.plot")
-library(rpart.plot)
-
-reduced_train_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual+Top20_Last             ,data = train_data, method = "class")
-rpart.plot(reduced_train_model)
-reduced_train_model$variable.importance
-
-```
-
-the first tree model predictions had a nearly 98% accuracy which shows that the model is almost perfect and that the countries that were in the top 20 are likely to stay there, confirming our primary assessment,despite the Top_20_last not being the primary indicator. 
-```{r}
-test_data$Top_20 <- as.factor(test_data$Top_20)
-# Predict class labels (Top_20) for test_data
-predictions <- predict(reduced_train_model, newdata = test_data, type = "class")
-# Confusion matrix
-conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
-print(conf_matrix)
-
-# Accuracy
-accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
-cat("Test Accuracy:", round(accuracy, 4), "\n")
-
-```
-*second model*
-the second model training without the former top_20
-in the second due to the removal of the Top_20_last parameter the corruption takes an even larger part as the primary indicator in the decision making.
-
-```{r}
-
-# Train the decision tree using rpart
-library(rpart)
-reduced_train_model_20 <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data, method = "class")
-rpart.plot(reduced_train_model_20)
-reduced_train_model_20$variable.importance
-
-```
-the second model predictions which shows an 82.5% which is a good model(not perfect like the first) and shows that even without the overall scores we are able to predict with reliable accuracy the Top_20 factor.
-
-```{r}
-test_data$Top_20 <- as.factor(test_data$Top_20)
-# Predict class labels (Top_20) for test_data
-predictions <- predict(reduced_train_model_20, newdata = test_data, type = "class")
-# Confusion matrix
-conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
-print(conf_matrix)
-
-# Accuracy
-accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
-cat("Test Accuracy:", round(accuracy, 4), "\n")
-
-```
-we will then split the data randomly and check if the results differ.
-
-```{r}
-
-
-happiness_data <- happiness_data[sample(nrow(happiness_data)), ]
-sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))
-train_data_rand  <- happiness_data[sample, ]
-test_data_rand   <- happiness_data[!sample, ]
-
-```
-
-*third model*
-
-the third model training including top_20_last year parameter using randomized data.
-in this model unlike the first model(both share the same parameters) the Top20_Last and the Year parameters are the primary indicators by a landslide showing the importance of this factors for the prediction.
-
-```{r}
-
-# Train the decision tree using rpart
-#install.packages("rpart.plot")
-library(rpart.plot)
-
-reduced_train_model_2 <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual+Top20_Last             ,data = train_data_rand, method = "class")
-rpart.plot(reduced_train_model_2)
-reduced_train_model_2$variable.importance
-
-```
-
-the third model predictions which shows an 98% accraucy and knowing how the model works  shows the small movement in the top 20 range on a randomized data.
-```{r}
-test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
-# Predict class labels (Top_20) for test_data
-predictions <- predict(reduced_train_model_2, newdata = test_data, type = "class")
-# Confusion matrix
-conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
-print(conf_matrix)
-
-# Accuracy
-accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
-cat("Test Accuracy:", round(accuracy, 4), "\n")
-
-```
-*fourth model*
-
-the second model training without the former top_20 with the randomized data.
-in this model similarly to the second model corruption is the primary indicator with a very big margin.
-
-
-```{r}
-
-# Train the decision tree using rpart
-library(rpart)
-reduced_train_model_202 <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
-rpart.plot(reduced_train_model_202)
-reduced_train_model_202$variable.importance
-
-```
-the second model predictions which shows an 95% which shows that even despite the removal of the TOP_20_last parameter it is still relatively easy to predict the Top_20 with a past and future knowledge(unlike the second model).
-
-```{r}
-test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
-# Predict class labels (Top_20) for test_data
-predictions <- predict(reduced_train_model_202, newdata = test_data, type = "class")
-# Confusion matrix
-conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
-print(conf_matrix)
-
-# Accuracy
-accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
-cat("Test Accuracy:", round(accuracy, 4), "\n")
-
-```
-
-*logistical regression models*
-
-in this section we created two logistical regression models which differ in the  test and train data they recieve.
-
-```{r}
-# Load required libraries
-library(dplyr)
-library(caret)
-
-# Optional: Remove countries with missing/incomplete data
-null_countries <- c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana",
-                    "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
-
-happiness_data <- happiness_data %>%
-  filter(!(Country_name %in% null_countries))
-```
-
-*first model*
-the first model uses a randomly split data and tries to use logistical regression to determine whether a country is in the top 20.
-this model is to successful at 97.5% accuracy deeming it ineffective and unreliable. 
-
-
-```{r logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
-
-set.seed(123)
-
-happiness_data <- happiness_data[sample(nrow(happiness_data)), ]
-sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))
-train  <- happiness_data[sample, ]
-test   <- happiness_data[!sample, ]
-
-
-
-
-
-cols <- c("Log_GDP", "Social_support", "Life_expectancy", "Freedom_of_choices", "Generosity", "Corruption", "Dystopia_and_residual")
-
-predictors <- paste(cols, collapse = " + ")
-log_formula <- as.formula(paste("Top_20 ~", predictors))
-log_formula
-
-logmodel <- glm(log_formula,
-             data = train, family = "binomial")
-#summary(logmodel)
-
-probs <- predict(logmodel, newdata = test, type = "response")
-preds <- ifelse(probs > 0.5, 1, 0)
-
-test$Top_20 <- as.integer(test$Top_20 == TRUE)
-test$preds <- preds
-
-actual <- factor(test$Top_20, levels = c(0, 1))
-predicted <- factor(test$preds, levels = c(0, 1))
-cm <- confusionMatrix(predicted, actual)
-print(cm)
-
-```
-*second model*
-the second model uses a timed split data(it uses all data before 2022 as train data and the rest as test data), and tries to use logistical regression to determine whether a country is in the top 20.
-this model as well is to successful at 96% accuracy deeming it ineffective and unreliable as well. 
-
-```{r logistic regression model_1 , echo=FALSE, warning=FALSE, message=FALSE}
-
-# Split data by year
-train_data <- subset(happiness_data, Year < 2022)
-test_data <- subset(happiness_data, Year >= 2022)
-
-# Ensure binary format for Top_20 in both datasets
-train_data$Top_20 <- as.integer(train_data$Top_20 == TRUE)
-test_data$Top_20 <- as.integer(test_data$Top_20 == TRUE)
-
-# Define predictor columns
-cols <- c("Log_GDP", "Social_support", "Life_expectancy",
-          "Freedom_of_choices", "Generosity", 
-          "Corruption", "Dystopia_and_residual")
-
-# Create formula dynamically
-predictors <- paste(cols, collapse = " + ")
-log_formula <- as.formula(paste("Top_20 ~", predictors))
-
-# Train logistic regression on train_data
-logmodel <- glm(log_formula, data = train_data, family = "binomial")
-
-# Predict on test_data
-probs <- predict(logmodel, newdata = test_data, type = "response")
-preds <- ifelse(probs > 0.5, 1, 0)
-
-# Add predictions to test_data
-test_data$preds <- preds
-
-# Create factors for evaluation
-actual <- factor(test_data$Top_20, levels = c(0, 1))
-predicted <- factor(test_data$preds, levels = c(0, 1))
-
-# Confusion matrix
-cm <- confusionMatrix(predicted, actual)
-print(cm)
-
-```
