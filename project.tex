@@ -1,0 +1,306 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Project Proposal: Happiness Report's top tier for multiple consecutive years},
+  pdfauthor={Amal Dagan, Bar Evron, Niv Dolev, Roni London},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Project Proposal: Happiness Report's top tier for multiple
+consecutive years}
+\author{Amal Dagan, Bar Evron, Niv Dolev, Roni London}
+\date{}
+
+\begin{document}
+\maketitle
+
+\newpage
+
+\section{Introduction}\label{introduction}
+
+\textbf{Research Question}\\
+Which indicators enable a country to remain in the World Happiness
+Report's top tier for multiple consecutive years?
+
+\textbf{Background}\\
+GDP per capita, social support, life expectancy and perceived freedom
+are repeatedly cited as key drivers of well-being.
+
+\textbf{Current Gap and existing research}\\
+Several studies have examined national happiness using WHR data, though
+few have explored long-term patterns. For example, Kuppens et al.~(2023)
+analyzed cultural factors in 78 countries before and after the COVID-19
+pandemic. They found that individualism and indulgence became stronger
+predictors of happiness post-COVID, suggesting that global crises may
+shift the importance of cultural values. However, their analysis
+compared only two time points (2017--2019 vs.~2021) and did not assess
+whether these associations hold across a longer period. Similarly,
+Al‐Maatouq and Al Shammari (2022) examined the relationship between WHR
+scores, Hofstede's cultural dimensions, and government education
+spending across 58 countries. They found that countries with higher
+long-term orientation and lower power distance tended to score higher on
+the WHR, indicating possible structural links between culture and
+well-being. However, their study was cross-sectional and did not account
+for how such associations might change over time. Despite the value of
+these contributions, our research takes a unique direction. We combine
+an unusually broad dataset---spanning 2011 to 2024 and covering over 150
+countries---with repeated-measures modeling to assess which happiness
+predictors remain robust over time. Unlike studies that focus on a
+single year or a narrow method, our approach allows us to explore both
+consistency and change in global well-being, providing updated and
+policy-relevant insights.
+
+\textbf{Method \& ``Stability Score''}\\
+A longitudinal logistic model is re-estimated for each vintage; a
+variable earns a stability score when its effect remains significant in
+all fourteen years.
+
+\textbf{Contribution}\\
+Turning the dataset's continual renewal from hurdle to asset, we deliver
+up-to-date policy guidance and reveal whether the perennial ``Top-20''
+countries stay happy for the same reasons or for shifting,
+time-dependent ones.
+
+\section{Data}\label{data}
+
+We use publicly available data from the World Happiness Report, based on
+the Gallup World Poll, covering the years 2011 to 2023. The dataset
+contains 1,969 yearly observations across 125 to 153 countries per year,
+with 14 variables per country-year entry. Each observation represents a
+single country in a given year. The variables include social, health,
+and economic factors widely studied in happiness research, such as:
+social support, GDP per capita, healthy life expectancy, freedom to make
+life choices, generosity, and perceptions of corruption. Our binary
+outcome variable indicates whether a country was ranked in the Top 20
+happiest countries that year. Importantly, the happiness score itself is
+not a single-year estimate but a three-year rolling average, meaning
+each year's score reflects data from the current and two previous years.
+For example, the 2022 score is an average of survey results from 2020,
+2021, and 2022. This design introduces temporal dependence between
+consecutive years. To address this, we plan to either: use
+repeated-measures models (e.g., mixed-effects models) that account for
+within-country correlations across time, or aggregate data at the
+country level to study long-term patterns, such as overall average
+happiness or total number of Top 20 appearances.
+
+A detailed data dictionary is included in the /data/README.md file in
+our repository.
+
+\section{Preliminary Results}\label{preliminary-results}
+
+\includegraphics{project_files/figure-latex/top_countries_long-1.pdf}
+
+The distribution of the number of years in the top 20 is kept pretty
+limited, only 14 countries have never left the top 20 spot. This goes to
+show that being a top country is a perpetual title. Which means there is
+merit to asking this question, we think there is a pattern of data that
+indicates how consistent a country is at staying at the top of the list.
+
+\#\texttt{\{r\ plot\_Ladder\_score\ ,fig.width=15,\ fig.height=5,\ echo=FALSE,\ warning=FALSE,\ message=FALSE\}\ \#plt1\ \#}
+
+\#This graph's purpose is to show that the columns are good predictors
+for the ladder score, and by extension being a top country. This wasn't
+unexpected, it's logical that an indicator of a positive trait in a
+country's society would impact its overall happiness. And since the
+ladder score is what dictates where a country is ranked, it will also
+probably take part in the model for our question.
+
+\section{Work Plan}\label{work-plan}
+
+The outcome is the Top-20 column and the predictors currently are all of
+the columns. The way we will answer the question is that we will attempt
+to find the most contributing variables in order to answer the question.
+
+we will use a variety of methods to answer the question: SHAP
+variables,desicion-tree and a logistic regression model, we will attempt
+to build those models concurrently and to compare and contrast them.
+
+we would like to receive some conclusive results(the p\_value of some of
+the variables will be significant),in all models so after comparison we
+could isolate the most relevant factors.
+
+\begin{itemize}
+\tightlist
+\item
+  Data preparation and cleaning. (Bar)
+\item
+  Exploratory analysis and visualization. (Roni)
+\item
+  Model building and evaluation. (Roni,Niv)
+\item
+  Interpretation of results and final reporting. (Amal,Niv)
+\end{itemize}
+
+\newpage
+
+Appendix\newline   This Markdown file describes the data structure and
+organization for the project.\newline  
+
+we will also elaborate about the pre project data cleaning,\newline  
+this data is a addition of WHR(world happiness reports) from 2011 to
+2024.\newline   the data cleaning included fixing the country
+names(where the standard of naming was changed in between the
+reports),erasing countries that dont exist and deleting
+duplicates.\newline   we also changed the column names(not all of the
+column names were identical in all the reports.)\newline  
+
+Data Columns: \newline  
+1. YEAR: the year in which the survey was conducted (the data is from
+2011--2024)\newline  
+2. Rank -- the country's Rank in the according year (from 1 to 158); not
+all countries were ranked plus the rank is by 3 year average.\newline  
+3. Country name -- the abbreviated name of the relevant
+country.\newline  
+4. Ladder score -- the WHR provides a number of the final happiness
+score of the current country (from 1.3 to 7.9).\newline  
+5. upperwhisker -- the upper boundary of the whisker score (from 1.43 to
+7.91).\newline  
+6. lowerwhisker -- the lower boundary of the whisker score (from 1.3 to
+7.78).\newline  
+7. Log GDP per capita -- a normalized version of the country's GDP index
+in comparison to the rest of the world (normalized in range from 0 to
+2.2).\newline  
+8. Social support -- a normalized version of the country's social
+support index in comparison to the rest of the world (normalized in
+range from 0 to 1.8).\newline  
+9. Healthy life expectancy -- a normalized version of the country's
+healthy life expectancy index in comparison to the rest of the world
+(normalized in range from 0 to 1.13).\newline  
+10. Freedom to make life choices -- a normalized version of the
+country's freedom to make life choices index in comparison to the rest
+of the world (normalized in range from 0 to 1.018).\newline  
+11. Generosity -- a normalized version of the country's generosity index
+in comparison to the rest of the world (normalized in range from 0 to
+0.57).\newline  
+12. Perceptions of corruption -- a normalized version of the country's
+perceptions of corruption index in comparison to the rest of the world
+(normalized in range from 0 to 0.587).\newline  
+13. Dystopia + residual -- a normalized version of the country's
+dystopia + residual index in comparison to the rest of the world
+(normalized in range from -0.11 to 3.482).\newline  
+14. Top 20 -- a binary variable indicating whether the country is in the
+top 20 in that particular year (the outcome variable).\newline  
+
+Rows: 1,969\newline   Columns: 14\newline   \$ Year 2024, 2023, 2022,
+2021, 2020, 2019\ldots{}\newline   \$ Rank 1, 143, 137, 146, 150, 153,
+154,\ldots{}\newline   \$ Country\_name ``Finland'', ``Afghanistan'',
+``Afghanistan'', \ldots{}\newline   \$ Ladder\_score 7.7360, 1.7210,
+1.8590, 2.4040, \ldots{}\newline   \$ upperwhisker 7.810000, 1.775000,
+1.923000, 2.\ldots{}\newline   \$ lowerwhisker 7.662000, 1.667000,
+1.795000, 2.\ldots{}\newline   \$ Log\_GDP 1.7490000, 0.6280000,
+0.6450000,\ldots{}\newline   \$ Social\_support 1.7830000, 0.0000000,
+0.0000000,\ldots{}\newline   \$ Life\_expectancy 0.8240000, 0.2420000,
+0.0870000,\ldots{}\newline   \$ Freedom\_of\_choices 0.9860000,
+0.0000000, 0.0000000,\ldots{}\newline   \$ Generosity 0.1100000,
+0.0910000, 0.0930000,\ldots{}\newline   \$ Corruption 0.502000000,
+0.088000000, 0.0590\ldots{}\newline \$ Dystopia\_and\_residual 1.782000,
+0.672000, 0.976000, 1.\ldots{}\newline   \$ Top\_20 TRUE, FALSE, FALSE,
+FALSE, FALSE\ldots{}\newline  
+
+\textbackslash{}\\
+\textbf{models and fun} The main model: Decision Tree Like logistic
+regression this is also a popular model for classification problems, and
+since it can be visualized it is an obvious choice to be one of the
+models. The second model example: Logistic Regression If we're to take a
+classification route, then logistic regression would be a good model for
+that. We got good results, but again maybe too good. All of the
+predictors seem to be strong predictors which was good for the sake of
+showing that there is a correlation, but the performance was too
+accurate to use as the main model.
+
+\begin{verbatim}
+## Top_20 ~ Log_GDP + Social_support + Life_expectancy + Freedom_of_choices + 
+##     Generosity + Corruption + Dystopia_and_residual
+\end{verbatim}
+
+\begin{verbatim}
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   0   1
+##          0 345   4
+##          1   5  45
+##                                           
+##                Accuracy : 0.9774          
+##                  95% CI : (0.9576, 0.9896)
+##     No Information Rate : 0.8772          
+##     P-Value [Acc > NIR] : 3.132e-13       
+##                                           
+##                   Kappa : 0.8962          
+##                                           
+##  Mcnemar's Test P-Value : 1               
+##                                           
+##             Sensitivity : 0.9857          
+##             Specificity : 0.9184          
+##          Pos Pred Value : 0.9885          
+##          Neg Pred Value : 0.9000          
+##              Prevalence : 0.8772          
+##          Detection Rate : 0.8647          
+##    Detection Prevalence : 0.8747          
+##       Balanced Accuracy : 0.9520          
+##                                           
+##        'Positive' Class : 0               
+## 
+\end{verbatim}
+
+\end{document}
