@@ -242,6 +242,89 @@ Like logistic regression this is also a popular model for classification problem
 The second model example: Logistic Regression
 If we're to take a classification route, then logistic regression would be a good model for that. We got good results, but again maybe too good. All of the predictors seem to be strong predictors which was good for the sake of showing that there is a correlation, but the performance was too accurate to use as the main model. 
 
+
+ column.
+
+```{r}
+colnames(happiness_data)
+set.seed(123)
+
+# Split data
+train_data <- subset(happiness_data, Year < 2023)
+test_data <- subset(happiness_data, Year >= 2023)
+
+```
+first model using all factors,visualization + factor importance
+
+```{r}
+tree_model <- rpart(Top_20 ~  Year + Country_name + Ladder_score + upperwhisker + lowerwhisker + Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = happiness_data, method = "class")
+rpart.plot(tree_model)
+tree_model$variable.importance
+
+```
+results show that ladder_score,lowerwhisker,upperwhisker are top 4 factors therefore we need to remove them to get to the root causes.
+
+```{r}
+tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = happiness_data, method = "class")
+rpart.plot(tree_model)
+tree_model$variable.importance
+
+```
+the model without the ladderscore and upperwhisker + lowerwhisker shows a lot more balanced tree that fits with the real life complexity of the issue.
+
+
+```{r}
+# Train the decision tree using rpart
+library(rpart)
+train_model <- rpart(Top_20 ~  Year + Country_name + Ladder_score + upperwhisker + lowerwhisker + Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data, method = "class")
+rpart.plot(train_model)
+train_model$variable.importance
+```
+the first model training 
+
+```{r}
+test_data$Top_20 <- as.factor(test_data$Top_20)
+# Predict class labels (Top_20) for test_data
+predictions <- predict(train_model, newdata = test_data, type = "class")
+# Confusion matrix
+conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+the first model prediction which shows an accraucy of 0.969 which is too high and shows the fact the ladderscore and upperwhisker + lowerwhisker are foretelling factors which hurt the research.
+
+```{r}
+
+# Train the decision tree using rpart
+library(rpart)
+reduced_train_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data, method = "class")
+rpart.plot(reduced_train_model)
+reduced_train_model$variable.importance
+
+```
+the second model training
+
+```{r}
+test_data$Top_20 <- as.factor(test_data$Top_20)
+# Predict class labels (Top_20) for test_data
+predictions <- predict(reduced_train_model, newdata = test_data, type = "class")
+# Confusion matrix
+conf_matrix <- table(Predicted = predictions, Actual = test_data$Top_20)
+print(conf_matrix)
+
+# Accuracy
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Test Accuracy:", round(accuracy, 4), "\n")
+
+```
+the second model predictions which shows an 84% which is a good model(not to good like the first) and shows that even without the overall scores we are able to predict with good accuracy the Top_20 factor
+
+
+
 ```{r logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
 ## removing null countries
 
@@ -288,11 +371,3 @@ print(cm)
 
 ```
 
-
-```{r plot_Ladder_score ,fig.width=15, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
-colnames(happiness_data)
-library(dplyr)
-
-
-colnames(happiness_data)
-```
