@@ -378,12 +378,10 @@ prediction.
 \includegraphics{project_files/figure-latex/unnamed-chunk-8-1.pdf}
 
 \begin{verbatim}
-##            Top20_Last                  Year            Corruption 
-##            277.130754            166.808698             93.865330 
-##               Log_GDP        Social_support    Freedom_of_choices 
-##             80.756132             54.492817             46.521987 
-##       Life_expectancy Dystopia_and_residual            Generosity 
-##             16.484906              2.465503              2.465503
+##         Top20_Last               Year         Corruption            Log_GDP 
+##         284.927473         165.036219          92.522683          74.454289 
+## Freedom_of_choices     Social_support    Life_expectancy         Generosity 
+##          55.840717          40.772587           7.509116           6.577438
 \end{verbatim}
 
 the third model predictions which shows an 98\% accraucy and knowing how
@@ -393,12 +391,12 @@ randomized data.
 \begin{verbatim}
 ##          Actual
 ## Predicted FALSE TRUE
-##     FALSE   362    5
-##     TRUE      5   55
+##     FALSE   363    8
+##     TRUE      4   52
 \end{verbatim}
 
 \begin{verbatim}
-## Test Accuracy: 0.9766
+## Test Accuracy: 0.9719
 \end{verbatim}
 
 \emph{fourth model}
@@ -411,11 +409,11 @@ primary indicator with a very big margin.
 
 \begin{verbatim}
 ##            Corruption Dystopia_and_residual       Life_expectancy 
-##            181.574094             89.040590             53.762825 
-##               Log_GDP        Social_support            Generosity 
-##             34.371464             33.487643             12.071977 
-##    Freedom_of_choices                  Year 
-##              8.277828              1.057851
+##            177.455443             82.534113             36.819540 
+##               Log_GDP        Social_support    Freedom_of_choices 
+##             33.715976             28.989031              9.824525 
+##            Generosity 
+##              6.085729
 \end{verbatim}
 
 the second model predictions which shows an 95\% which shows that even
@@ -426,12 +424,12 @@ knowledge(unlike the second model).
 \begin{verbatim}
 ##          Actual
 ## Predicted FALSE TRUE
-##     FALSE   357    7
-##     TRUE     10   53
+##     FALSE   360   18
+##     TRUE      7   42
 \end{verbatim}
 
 \begin{verbatim}
-## Test Accuracy: 0.9602
+## Test Accuracy: 0.9415
 \end{verbatim}
 
 \emph{logistical regression models}
@@ -454,26 +452,26 @@ ineffective and unreliable.
 ## 
 ##           Reference
 ## Prediction   0   1
-##          0 353   1
-##          1   3  41
+##          0 356   5
+##          1   5  32
 ##                                           
-##                Accuracy : 0.9899          
-##                  95% CI : (0.9745, 0.9973)
-##     No Information Rate : 0.8945          
-##     P-Value [Acc > NIR] : 1.153e-14       
+##                Accuracy : 0.9749          
+##                  95% CI : (0.9543, 0.9879)
+##     No Information Rate : 0.907           
+##     P-Value [Acc > NIR] : 5.646e-08       
 ##                                           
-##                   Kappa : 0.9479          
+##                   Kappa : 0.851           
 ##                                           
-##  Mcnemar's Test P-Value : 0.6171          
+##  Mcnemar's Test P-Value : 1               
 ##                                           
-##             Sensitivity : 0.9916          
-##             Specificity : 0.9762          
-##          Pos Pred Value : 0.9972          
-##          Neg Pred Value : 0.9318          
-##              Prevalence : 0.8945          
-##          Detection Rate : 0.8869          
-##    Detection Prevalence : 0.8894          
-##       Balanced Accuracy : 0.9839          
+##             Sensitivity : 0.9861          
+##             Specificity : 0.8649          
+##          Pos Pred Value : 0.9861          
+##          Neg Pred Value : 0.8649          
+##              Prevalence : 0.9070          
+##          Detection Rate : 0.8945          
+##    Detection Prevalence : 0.9070          
+##       Balanced Accuracy : 0.9255          
 ##                                           
 ##        'Positive' Class : 0               
 ## 
