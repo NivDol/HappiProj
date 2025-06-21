@@ -1,14 +1,17 @@
 ---
-title: 'Project Proposal: Suicide Risk Among High School Students'
+title: 'Project Proposal: Happiness Report’s top tier for multiple consecutive years'
 author: "Amal Dagan, Bar Evron, Niv Dolev, Roni London"
 output:
-  html_document:
-    df_print: paged
   pdf_document:
     number_sections: true
     fig_caption: true
     latex_engine: xelatex
+  html_document:
+    df_print: paged
 ---
+
+\newpage
+
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
@@ -18,377 +21,278 @@ library(dplyr)
 library(stringr)
 library(ggplot2)
 library(patchwork)
+library(caret)
+library(pROC)
+library(readxl)  # חבילה לטעינת קבצי אקסל
 ```
 
 # Introduction
-Suicide among adolescents is a major public health concern worldwide. While many studies examine mental health factors, less attention has been given to how personal identity and social context influence suicide attempts among high school students.
 
-**Specific Problem to Solve**  
-What personal and social factors (such as gender, race, grade level, sexual identity, and sexual contact history) are associated with higher rates of suicide attempts among high school students?
+**Research Question**  
+Which indicators enable a country to remain in the World Happiness Report’s top tier for multiple consecutive years?
 
-**Importance**  
-Identifying high-risk groups can help educators, policymakers, and mental health professionals develop targeted interventions that reduce suicide rates and promote student well-being. This issue has become even more urgent in recent years, as adolescent mental health has deteriorated significantly following the COVID-19 pandemic, with notable increases in suicide ideation and emotional distress.
+**Background**  
+GDP per capita, social support, life expectancy and perceived freedom are repeatedly cited as key drivers of well-being.
 
-**Challenges and Novelty**  
-Many demographic variables overlap (e.g., sexual identity and sex of sexual contact), and suicide data can be sparse and sensitive. Our analysis goes beyond standard group comparisons by exploring interactions and risk gradients across multiple identity axes.
+**Current Gap and existing research**  
+Several studies have examined national happiness using WHR data, though few have explored long-term patterns.
+For example, Kuppens et al. (2023) analyzed cultural factors in 78 countries before and after the COVID-19 pandemic. They found that individualism and indulgence became stronger predictors of happiness post-COVID, suggesting that global crises may shift the importance of cultural values. However, their analysis compared only two time points (2017–2019 vs. 2021) and did not assess whether these associations hold across a longer period.
+Similarly, Al‐Maatouq and Al Shammari (2022) examined the relationship between WHR scores, Hofstede’s cultural dimensions, and government education spending across 58 countries. They found that countries with higher long-term orientation and lower power distance tended to score higher on the WHR, indicating possible structural links between culture and well-being. However, their study was cross-sectional and did not account for how such associations might change over time.
+Despite the value of these contributions, our research takes a unique direction. We combine an unusually broad dataset—spanning 2011 to 2024 and covering over 150 countries—with repeated-measures modeling to assess which happiness predictors remain robust over time. Unlike studies that focus on a single year or a narrow method, our approach allows us to explore both consistency and change in global well-being, providing updated and policy-relevant insights.
 
-**Our Approach**  
-We will analyze national-level survey data using exploratory data analysis (EDA), regression models, and visualizations. Our models will focus on predicting suicide attempt rates using identity and social context variables. We will also conduct exploratory data analysis and visualizations to uncover
- patterns and relationships between key factors
+**Method & “Stability Score”**  
+A longitudinal logistic model is re-estimated for each vintage; a variable earns a stability score when its effect remains significant in all fourteen years.
 
-
-
-
-
-
-
-
+**Contribution**  
+Turning the dataset’s continual renewal from hurdle to asset, we deliver up-to-date policy guidance and reveal whether the perennial “Top-20” countries stay happy for the same reasons or for shifting, time-dependent ones.
 
 # Data
 
-reprocessed dataset (details of the preprocessing steps are provided in the appendix) includes approximately **2,623,976 rows** and **32 variables**. These observations were drawn from nationwide adolescent survey responses collected between 2015 and 2017.The data is publicly available from the CDC's Youth Risk Behavior Surveillance System (YRBSS), provided by the Division of Adolescent School Health (DASH).
+We use publicly available data from the World Happiness Report, based on the Gallup World Poll, covering the years 2011 to 2023. The dataset contains 1,969 yearly observations across 125 to 153 countries per year, with 14 variables per country-year entry. Each observation represents a single country in a given year.
+The variables include social, health, and economic factors widely studied in happiness research, such as: social support, GDP per capita, healthy life expectancy, freedom to make life choices, generosity, and perceptions of corruption. Our binary outcome variable indicates whether a country was ranked in the Top 20 happiest countries that year. Importantly, the happiness score itself is not a single-year estimate but a three-year rolling average, meaning each year’s score reflects data from the current and two previous years. For example, the 2022 score is an average of survey results from 2020, 2021, and 2022. This design introduces temporal dependence between consecutive years.
+To address this, we plan to either: use repeated-measures models (e.g., mixed-effects models) that account for within-country correlations across time, or aggregate data at the country level to study long-term patterns, such as overall average happiness or total number of Top 20 appearances.
 
-For the purpose of this project, we focus on the following key variables that capture individual identity and social context:
-
-- **Race** — Categorical: White, Black, Hispanic, Asian, Native American, Multiple race, Pacific Islander.  
-- **Grade** — Ordinal: 9th to 12th grade  
-- **Sex** — Categorical: Male, Female, Unknown  
-- **Sexual Identity** — Categorical: Heterosexual (Straight), Gay/Lesbian, Bisexual, Unsure  
-- **Sex of Sexual Contacts** — Categorical: No sexual contact, Both sexes, Opposite sex only, Same sex only  
-
-These variables will serve as the primary predictors in our analysis, allowing us to assess how demographic and identity-related factors are associated with reported suicide attempt rates among high school students.
-
+A detailed data dictionary is included in the /data/README.md file in our repository.
 
 # Preliminary Results
-We began our analysis by computing the average suicide attempt rate for each category within our key demographic variables. The results suggest clear disparities.
 ```{r loaoding data}
 # טען את קובץ הנתונים
-data <- read_csv("YRBSS_clean_noNA.csv", show_col_types = FALSE)
-
-# סינון לנתונים הרלוונטיים לשאלת "ניסיון התאבדות"
-suicide_data <- data %>%
-  filter(str_detect(ShortQuestionText, regex("suicide attempt", ignore_case = TRUE))) %>%
-  filter(!is.na(Greater_Risk_Data_Value))
-
-glimpse(suicide_data)
-
-```
-
-```{r plots-and-table, fig.width=18, fig.height=10, echo=FALSE, warning=FALSE, message=FALSE}
-# פונקציה משופרת ליצירת גרפים
-
-# יצירת מילון שמות מקוצרים לכל משתנה
-short_labels_sexofcontacts <- c(
-  "No sexual contact" = "None",
-  "Opposite sex only" = "Opposite",
-  "Same sex only" = "Same",
-  "Both sexes" = "Both"
-)
-
-short_labels_identity <- c(
-  "Heterosexual (straight)" = "Hetero",
-  "Gay or Lesbian" = "Gay/Les",
-  "Bisexual" = "Bi",
-  "Not sure" = "Unsure"
-)
-
-short_labels_sex <- c(
-  "Female" = "F",
-  "Male" = "M"
-)
-
-# אפשר גם ל־Race ו־Grade אם תרצי
-short_labels_race <- c(
-  "White" = "White",
-  "Black or African American" = "Black",
-  "Hispanic/Latino" = "Hisp.",
-  "Asian" = "Asian",
-  "Native Hawaiian or Other Pacific Islander" = "NHPI",
-  "American Indian or Alaska Native" = "AIAN",
-  "Multiple races" = "Multi"
-)
-
-short_labels_grade <- c(
-  "9th" = "9",
-  "10th" = "10",
-  "11th" = "11",
-  "12th" = "12"
-)
-
-plot_avg_attempts <- function(variable) {
-  data_plot <- suicide_data %>%
-    filter(!is.na(Greater_Risk_Data_Value), .data[[variable]] != "Total") %>%
-    group_by(.data[[variable]]) %>%
-    summarise(avg_attempt = mean(Greater_Risk_Data_Value, na.rm = TRUE))
-  
-  # קיצור שמות לפי המשתנה
-  if(variable == "SexOfSexualContacts") {
-    data_plot[[variable]] <- recode(data_plot[[variable]], !!!short_labels_sexofcontacts)
-  }
-  if(variable == "SexualIdentity") {
-    data_plot[[variable]] <- recode(data_plot[[variable]], !!!short_labels_identity)
-  }
-  if(variable == "Sex") {
-    data_plot[[variable]] <- recode(data_plot[[variable]], !!!short_labels_sex)
-  }
-  if(variable == "Race") {
-    data_plot[[variable]] <- recode(data_plot[[variable]], !!!short_labels_race)
-  }
-  if(variable == "Grade") {
-    data_plot[[variable]] <- recode(data_plot[[variable]], !!!short_labels_grade)
-  }
-  
-  ggplot(data_plot, aes(x = reorder(.data[[variable]], -avg_attempt), y = avg_attempt, fill = .data[[variable]])) +
-    geom_col(width = 0.4) +
-    scale_x_discrete(expand = expansion(mult = c(0.15, 0.15))) +
-    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
-    labs(title = paste("Suicide Attempt Rate by", variable),
-         x = variable, y = "Average %") +
-    theme_minimal(base_size = 11) +
-    theme(
-      axis.text.x = element_text(angle = 60, hjust = 1, size = 14),
-      panel.border = element_rect(color = "black", fill = NA, size = 0.4),
-      plot.margin = margin(10, 10, 20, 10),
-      legend.position = "none"
-    )
-}
-
-plot_avg_attempts_sex <- function(variable) {
-  suicide_data %>%
-    filter(!is.na(Greater_Risk_Data_Value),
-           .data[[variable]] != "Total") %>%
-    group_by(.data[[variable]]) %>%
-    summarise(avg_attempt = mean(Greater_Risk_Data_Value, na.rm = TRUE)) %>%
-    ggplot(aes(x = .data[[variable]], y = avg_attempt, fill = .data[[variable]])) +
-    geom_col(width = 0.3) +  # עמודות צרות במיוחד
-    scale_x_discrete(expand = expansion(mult = c(0.35, 0.35))) + # ריווח גדול מהקצוות
-    scale_y_continuous(expand = expansion(mult = c(0.05, 0.12))) +
-    labs(title = "Suicide Attempt Rate by Sex",
-         x = "Sex", y = "Average %") +
-    theme_minimal(base_size = 11) +
-    theme(
-      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 14),
-      panel.border = element_rect(color = "black", fill = NA, size = 0.5),
-      plot.margin = margin(10, 10, 20, 10),
-      legend.position = "none"
-    )
-}
-# יצירת 3 הגרפים המובילים
-p1 <- plot_avg_attempts("SexualIdentity")
-p2 <- plot_avg_attempts("SexOfSexualContacts")
-p3 <- plot_avg_attempts_sex("Sex")
-
-# הצגת הגרפים בפריסה נוחה
-(p1 | p2 | p3) 
 
 
-```
 
-```{r}
-suicide_data %>%
-  filter(!is.na(Greater_Risk_Data_Value)) %>%
-  group_by(SexOfSexualContacts) %>%
-  summarise(
-    N = n(),
-    Avg_Attempt_Rate = round(mean(Greater_Risk_Data_Value, na.rm = TRUE), 2)
-  ) %>%
-  arrange(desc(Avg_Attempt_Rate)) %>%
-  knitr::kable(
-    caption = "Average Suicide Attempt Rate by Sexual Contact Group",
-    col.names = c("Sex of Sexual Contacts", "Number of Students", "Average Attempt Rate (%)")
-  )
+happiness_data <- read_csv("happiness_data_clean_2011_2024.csv")
 
+#glimpse(happiness_data)
+#head(happiness_data)
+#summary(happiness_data)
 
-```
-```{r}
-
-suicide_data %>%
-  count(Sex)
-
-suicide_data %>%
-  count(Race)
-
-suicide_data %>%
-  count(SexualIdentity)
-
-suicide_data %>%
-  count(Grade)
-```
-
-```{r}
-summary(suicide_data$Greater_Risk_Data_Value)
-mean(suicide_data$Greater_Risk_Data_Value, na.rm = TRUE)
-sd(suicide_data$Greater_Risk_Data_Value, na.rm = TRUE)
-
-```
-
-```{r}
-library(GGally)
-suicide_data %>%
-  select(where(is.numeric)) %>%
-  GGally::ggpairs()
-
-```
-
-```{r}
-summary_df <- suicide_data %>%
-  group_by(SexualIdentity, Sex) %>%
-  summarise(
-    Mean_Attempt = mean(Greater_Risk_Data_Value, na.rm = TRUE),
-    N = n(),
-    SD = sd(Greater_Risk_Data_Value, na.rm = TRUE),
-    SE = SD / sqrt(N),
-    CI_low = Mean_Attempt - 1.96 * SE,
-    CI_high = Mean_Attempt + 1.96 * SE
-  )
-
-ggplot(summary_df, aes(x = SexualIdentity, y = Mean_Attempt, fill = Sex)) +
-  geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = CI_low, ymax = CI_high), 
-                position = position_dodge(0.9), width = 0.2) +
-  labs(title = "Suicide Attempt Rate by Sex and Sexual Identity",
-       y = "Average %") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-```{r}
-
-# סיכום ממוצע לכל שילוב
-heatmap_df <- suicide_data %>%
-  group_by(Sex, SexualIdentity, Grade) %>%
-  summarise(
-    Mean_Attempt = mean(Greater_Risk_Data_Value, na.rm = TRUE),
-    N = n()
+happiness_data <- happiness_data %>%
+  mutate(`Country name` = trimws(`Country name`))
+happiness_data <- happiness_data %>%
+  group_by(`Country name`) %>%
+  fill(
+    `Ladder score`, upperwhisker, lowerwhisker,
+    `Explained by: Log GDP per capita`, `Explained by: Social support`,
+    `Explained by: Healthy life expectancy`, `Explained by: Freedom to make life choices`,
+    `Explained by: Generosity`, `Explained by: Perceptions of corruption`,
+    `Dystopia + residual`,
+    .direction = "downup"
   ) %>%
   ungroup()
+# מחיקה לדוג' של מדינות לא אמיתיות (אם יש)
+happiness_data <- happiness_data %>%
+  filter(!is.na(`Ladder score`)) # או עמודה עיקרית אחרת
+#write_csv(happiness_data, "happiness_data_clean_2011_2024.csv")
 
-# טבלת חום - facet לפי Sex (מין)
-ggplot(heatmap_df, aes(x = Grade, y = SexualIdentity, fill = Mean_Attempt)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = sprintf("%.1f", Mean_Attempt)), size = 3) +  # מציגים את הערך הממוצע
-  facet_wrap(~Sex) +
-  scale_fill_gradient(low = "white", high = "red", name = "Average %") +
-  labs(title = "Suicide Attempt Rate by Sex, Sexual Identity, and Grade",
-       y = "Sexual Identity", x = "Grade") +
-  theme_minimal(base_size = 12) +
-  theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
-```
-```{r}
-colnames(suicide_data)
-```
-
-```{r}
-
-
-# המרת משתנים לקטגוריים
-suicide_data$Sex <- as.factor(suicide_data$Sex)
-suicide_data$Grade <- as.factor(suicide_data$Grade)
-suicide_data$SexualIdentity <- as.factor(suicide_data$SexualIdentity)
-suicide_data$Race <- as.factor(suicide_data$Race)
-suicide_data$SexOfSexualContacts <- as.factor(suicide_data$SexOfSexualContacts)
-
-model_data <- na.omit(suicide_data[, c(
-  "Greater_Risk_Data_Value",
-   "Grade", "SexualIdentity", "Race"
-)])
-
-rf_model <- randomForest(
-  Greater_Risk_Data_Value ~  Grade + SexualIdentity + Race ,
-  data = model_data
-)
-
-# יצירת explainer ל-DALEX
-explainer_rf <- explain(
-  model = rf_model,
-  data = model_data[, c( "Grade", "SexualIdentity", "Race")],
-  y = model_data$Greater_Risk_Data_Value,
-  label = "Random Forest"
-)
-
-# חישוב ערכי SHAP לכל הדאטה
-shap_values <- predict_parts(
-  explainer_rf,
-  new_observation = model_data[, c( "Grade", "SexualIdentity", "Race")],
-  type = "shap"
-)
-
-# גרף SHAP summary
-plot(shap_values)
-```
-
-
-```{r}
-
-# ניבוי על הדאטה
-model_data$pred <- predict(rf_model, newdata = model_data)
-
-# חישוב R-squared
-rss <- sum((model_data$Greater_Risk_Data_Value - model_data$pred)^2)
-tss <- sum((model_data$Greater_Risk_Data_Value - mean(model_data$Greater_Risk_Data_Value))^2)
-r_squared <- 1 - rss/tss
-
-# חישוב MSE, RMSE, MAE
-mse <- mean((model_data$Greater_Risk_Data_Value - model_data$pred)^2)
-rmse <- sqrt(mse)
-mae <- mean(abs(model_data$Greater_Risk_Data_Value - model_data$pred))
-
-cat("R-squared:", r_squared, "\n")
-cat("MSE:", mse, "\n")
-cat("RMSE:", rmse, "\n")
-cat("MAE:", mae, "\n")
-```
-
-
-
-
-```{r}
-plot(model_data$Greater_Risk_Data_Value, model_data$pred,
-     xlab = "True Value", ylab = "Predicted Value", main = "True vs Predicted")
-abline(0, 1, col="red")
 
 ```
 
+```{r summary, echo=FALSE, warning=FALSE, message=FALSE}
+#summary(happiness_data %>% 
+#  select(`Ladder score`, 
+#         `Explained by: Log GDP per capita`, 
+#         `Explained by: Social support`,
+#         `Explained by: Healthy life expectancy`, 
+#         `Explained by: Freedom to make life choices`))
+```
 
-In order to present our findings clearly and concisely, we chose to focus on three identity-related variables that showed the greatest disparity in suicide attempt rates: Sexual Identity, Sex of Sexual Contacts, and Sex. These dimensions not only exhibit strong variation but are also central to our research question regarding how personal and social identity contribute to suicide risk in adolescents.
 
-These initial visualizations provide strong evidence that suicide attempt rates vary substantially across identity-related factors, including gender, sexual identity, race, grade, and sexual contact history.
+```{r plots-and-table, fig.width=9, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
 
-By visualizing average attempt rates per group, we identified clear disparities and high-risk categories (e.g., gay or lesbian, 10th–11th graders, students with both-sex sexual contact).
+happiness_data <- happiness_data %>%
+  group_by(Year) %>%
+  mutate(Top_20 = Rank <= 20) %>%
+  ungroup() %>%
+  rename(Country_name = `Country name`, Ladder_score = `Ladder score`, Log_GDP = `Explained by: Log GDP per capita`, Social_support = `Explained by: Social support`, Life_expectancy = `Explained by: Healthy life expectancy`, Freedom_of_choices = `Explained by: Freedom to make life choices`, Generosity = `Explained by: Generosity`, Dystopia_and_residual = `Dystopia + residual`, Corruption = `Explained by: Perceptions of corruption` )
+happiness_data <- happiness_data %>%
+  arrange(Country_name, Year) %>%  # Sort by country and year
+  group_by(Country_name) %>%      # Process each country separately
+  mutate(Was_in_Top20_Last_Year = lag(Top_20)) %>%  # Get last year's Top_20
+  ungroup() %>%  # Remove grouping
+  mutate(Was_in_Top20_Last_Year = case_when(
+    is.na(Was_in_Top20_Last_Year) ~ 2,         # No previous data
+    Was_in_Top20_Last_Year == 1 ~ 1,           # Was in top 20
+    Was_in_Top20_Last_Year == 0 ~ 0            # Was not in top 20
+  ))
+#colnames(happiness_data)
 
-Importantly, the clarity and strength of these early insights demonstrate that the research question is measurable and well-grounded in the available data. The variables are clearly defined, well-populated, and statistically analyzable. These findings confirm that the project is **viable and achievable** using standard R-based methods such as exploratory analysis and regression modeling. 
+# סופרים לכל מדינה בכמה שנים הייתה בטופ 20
+top_countries_long <- happiness_data %>%
+  filter(Top_20) %>%
+  count(Country_name, name = "Years_in_Top_20") %>%
+  arrange(desc(Years_in_Top_20))
+
+# תצוגה - 25 הראשונות
+#print(top_countries_long, n=25)
+
+
+tpl1 <- top_countries_long %>%
+  filter(Years_in_Top_20 >= 5) %>% # תבחרי את הסף שמתאים לויזואליות
+  ggplot(aes(x = reorder(Country_name, Years_in_Top_20), y = Years_in_Top_20)) +
+  geom_col(fill = "lightgreen") +
+  coord_flip() +
+  labs(
+    title = "Number of Years Each Country was in the Top 20",
+    x = "Country",
+    y = "Years in Top 20"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 13)
+  )
+
+plt1 <- ggplot(happiness_data, aes(x = Social_support, y = Ladder_score)) +
+  geom_point(alpha=0.4) +
+  geom_smooth(method="lm", se=FALSE, color="blue") +
+  labs(title="Ladder score vs Social support")
+
+plt <- ggplot(happiness_data, aes(x=Rank)) + geom_histogram(color="darkblue", fill="lightblue", binwidth=3) +
+  labs(title="Distribution of rankings")+
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 13)
+  )
+```
+
+
+```{r top_countries_long, fig.width=10, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
+tpl1 | plt
+```
+
+The distribution of the number of years in the top 20 is kept pretty limited, only 14 countries have never left the top 20 spot.
+This goes to show that being a top country is a perpetual title. Which means there is merit to asking this question, we think there is a pattern of data that indicates how consistent a country is at staying at the top of the list.
+
+
+#```{r plot_Ladder_score ,fig.width=15, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
+#plt1
+#```
+
+#This graph's purpose is to show that the columns are good predictors for the ladder score, and by extension being a top country. This wasn't unexpected, it's logical that an indicator of a positive trait in a country's society would impact its overall happiness. And since the ladder score is what dictates where a country is ranked, it will also probably take part in the model for our question.
+
+
+
 
 # Work Plan
 
-**Outcome and Predictors**
+The outcome is the Top-20 column and the predictors currently are all of the columns. The way we will answer the question is that we will attempt to find the most contributing variables  in order to answer the question.
 
-The outcome variable (`Y`) in our analysis is a **binary indicator** of elevated suicide risk. Specifically, we define a subgroup as "high risk" if its reported suicide attempt rate exceeds the **overall average** across all students in the dataset. This operationalization allows us to model the problem as a **classification task**.
+we will use a variety of methods to answer the question:
+SHAP variables,desicion-tree and a logistic regression model, we will attempt to build those models concurrently and to compare and contrast them.
 
-The explanatory variables (`X`) are:
-Race,Grade,Sex,Sexual Identity,Sex of Sexual Contacts
+we would like to receive some conclusive results(the p_value of some of the variables will be significant),in all models so after comparison we could isolate the most relevant factors.
 
-These demographic and identity-related variables are hypothesized to be associated with suicide risk and will be used to predict the binary outcome.
+- Data preparation and cleaning. (Bar)
+- Exploratory analysis and visualization. (Roni)
+- Model building and evaluation. (Roni,Niv)
+- Interpretation of results and final reporting. (Amal,Niv)
 
-**Planned Analysis**
 
-Our analysis will begin with descriptive statistics and exploratory data visualizations to assess the distribution of suicide attempt rates across different subgroups. 
+\newpage
 
-We will then fit a **logistic regression model** and a **decision tree** to estimate the contribution of each predictor to the probability of elevated suicide risk.
+Appendix\newline  
+This Markdown file describes the data structure and organization for the project.\newline  
 
-To capture potential non-linear patterns and interactions, we may also implement tree-based ensemble methods such as **random forests** and maybe **Shap**, which are useful for ranking variable importance and improving classification performance.
+we will also elaborate about the pre project data cleaning,\newline  
+this data is a addition of WHR(world happiness reports) from 2011 to 2024.\newline  
+the data cleaning included fixing the country names(where the standard of naming was changed in between the reports),erasing countries that dont exist and deleting duplicates.\newline  
+we also changed the column names(not all of the column names were identical in all the reports.)\newline  
 
-**Feasibility**
+Data Columns: \newline  
+1. YEAR: the year in which the survey was conducted (the data is from 2011–2024)\newline  
+2. Rank – the country's Rank in the according year (from 1 to 158); not all countries were ranked plus the rank is by 3 year average.\newline  
+3. Country name – the abbreviated name of the relevant country.\newline  
+4. Ladder score – the WHR provides a number of the final happiness score of the current country (from 1.3 to 7.9).\newline  
+5. upperwhisker – the upper boundary of the whisker score (from 1.43 to 7.91).\newline  
+6. lowerwhisker – the lower boundary of the whisker score (from 1.3 to 7.78).\newline  
+7. Log GDP per capita – a normalized version of the country's GDP index in comparison to the rest of the world (normalized in range from 0 to 2.2).\newline  
+8. Social support – a normalized version of the country's social support index in comparison to the rest of the world (normalized in range from 0 to 1.8).\newline  
+9. Healthy life expectancy – a normalized version of the country's healthy life expectancy index in comparison to the rest of the world (normalized in range from 0 to 1.13).\newline  
+10. Freedom to make life choices – a normalized version of the country's freedom to make life choices index in comparison to the rest of the world (normalized in range from 0 to 1.018).\newline  
+11. Generosity – a normalized version of the country's generosity index in comparison to the rest of the world (normalized in range from 0 to 0.57).\newline  
+12. Perceptions of corruption – a normalized version of the country's perceptions of corruption index in comparison to the rest of the world (normalized in range from 0 to 0.587).\newline  
+13. Dystopia + residual – a normalized version of the country's dystopia + residual index in comparison to the rest of the world (normalized in range from -0.11 to 3.482).\newline  
+14. Top 20 – a binary variable indicating whether the country is in the top 20 in that particular year (the outcome variable).\newline  
 
-Given the size and richness of the dataset, the availability of well-structured categorical variables, and the clarity of the research question, this analysis is feasible to complete. All proposed methods are well-supported by R packages and align with techniques covered in the course.
+Rows: 1,969\newline  
+Columns: 14\newline  
+$ Year <dbl> 2024, 2023, 2022, 2021, 2020, 2019…\newline  
+$ Rank <dbl> 1, 143, 137, 146, 150, 153, 154,…\newline  
+$ Country_name <chr> "Finland", "Afghanistan", "Afghanistan", …\newline  
+$ Ladder_score <dbl> 7.7360, 1.7210, 1.8590, 2.4040, …\newline  
+$ upperwhisker <dbl> 7.810000, 1.775000, 1.923000, 2.…\newline  
+$ lowerwhisker <dbl> 7.662000, 1.667000, 1.795000, 2.…\newline  
+$ Log_GDP <dbl> 1.7490000, 0.6280000, 0.6450000,…\newline  
+$ Social_support <dbl> 1.7830000, 0.0000000, 0.0000000,…\newline  
+$ Life_expectancy <dbl> 0.8240000, 0.2420000, 0.0870000,…\newline  
+$ Freedom_of_choices <dbl> 0.9860000, 0.0000000, 0.0000000,…\newline  
+$ Generosity <dbl> 0.1100000, 0.0910000, 0.0930000,…\newline  
+$ Corruption <dbl> 0.502000000, 0.088000000, 0.0590…\newline
+$ Dystopia_and_residual <dbl> 1.782000, 0.672000, 0.976000, 1.…\newline  
+$ Top_20 <lgl> TRUE, FALSE, FALSE, FALSE, FALSE…\newline  
 
-**Teamwork**
+		
+\\\
+**models and fun**
+The main model: Decision Tree
+Like logistic regression this is also a popular model for classification problems, and since it can be visualized it is an obvious choice to be one of the models.
+The second model example: Logistic Regression
+If we're to take a classification route, then logistic regression would be a good model for that. We got good results, but again maybe too good. All of the predictors seem to be strong predictors which was good for the sake of showing that there is a correlation, but the performance was too accurate to use as the main model. 
 
-Project responsibilities will be divided among team members as follows:
+```{r logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
+## removing null countries
 
-- Data preparation and cleaning. (Niv)
-- Exploratory analysis and visualization. (Bar)
-- Model building and evaluation. (Roni)
-- Interpretation of results and final reporting. (Amal)
+null_countries = c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana", "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
+happiness_data<-happiness_data %>% filter(!(Country_name %in% null_countries))
+# happiness_data
 
-although we would prefer the project to be divided equally amongst all 4 team members, we have an active miluim participant in our team therefore we need to adjust, and divide the work in a fair and just manner. 
-All team members will contribute collaboratively to the best of their capabilities to  ensure consistency and insight at each stage of the project.
+## logistic regression example
+
+
+
+set.seed(123)
+
+# renamed to Corruption for simplicity.
+# happiness_data <- happiness_data %>% rename(Corruption = `Explained by: Perceptions of corruption`)
+
+happiness_data <- happiness_data[sample(nrow(happiness_data)), ]
+sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))
+train  <- happiness_data[sample, ]
+test   <- happiness_data[!sample, ]
+
+cols <- c("Log_GDP", "Social_support", "Life_expectancy", "Freedom_of_choices", "Generosity", "Corruption", "Dystopia_and_residual")
+
+predictors <- paste(cols, collapse = " + ")
+log_formula <- as.formula(paste("Top_20 ~", predictors))
+log_formula
+
+logmodel <- glm(log_formula,
+             data = train, family = "binomial")
+#summary(logmodel)
+
+probs <- predict(logmodel, newdata = test, type = "response")
+preds <- ifelse(probs > 0.5, 1, 0)
+
+test$Top_20 <- as.integer(test$Top_20 == TRUE)
+test$preds <- preds
+
+actual <- factor(test$Top_20, levels = c(0, 1))
+predicted <- factor(test$preds, levels = c(0, 1))
+cm <- confusionMatrix(predicted, actual)
+print(cm)
+
+
+
+```
+
+
+```{r plot_Ladder_score ,fig.width=15, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
+colnames(happiness_data)
+library(dplyr)
+
+
+colnames(happiness_data)
+```
