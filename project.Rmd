@@ -196,8 +196,6 @@ the first model training including top_20_last year parameter.
 looking the important indicators corruption is the primary indicator of the tree, despite and the TOP_20_last second(showing the importance of this parameter).
 ```{r first_model_training}
 
-library(rpart.plot)
-
 first_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual+Top20_Last             ,data = train_data_chron, method = "class")
 rpart.plot(first_tree_model)
 first_tree_model$variable.importance
@@ -206,6 +204,7 @@ first_tree_model$variable.importance
 
 the first tree model predictions had a nearly 98% accuracy which shows that the model is almost perfect and that the countries that were in the top 20 are likely to stay there, confirming our primary assessment,despite the Top_20_last not being the primary indicator. 
 ```{r first_model_predict}
+
 test_data_chron$Top_20 <- as.factor(test_data_chron$Top_20)
 # Predict class labels (Top_20) for test_data
 
@@ -235,6 +234,7 @@ second_tree_model$variable.importance
 the second model predictions which shows an 82.5% which is a good model(not perfect like the first) and shows that even without the overall scores we are able to predict with reliable accuracy the Top_20 factor.
 
 ```{r second_model_predict}
+
 test_data_chron$Top_20 <- as.factor(test_data_chron$Top_20)
 # Predict class labels (Top_20) for test_data
 predictions <- predict(second_tree_model, newdata = test_data_chron, type = "class")
@@ -273,6 +273,7 @@ third_tree_model$variable.importance
 
 the third model predictions which shows an 98% accraucy and knowing how the model works  shows the small movement in the top 20 range on a randomized data.
 ```{r third_model_predict}
+
 test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
 # Predict class labels (Top_20) for test_data
 predictions <- predict(third_tree_model, newdata = test_data_rand, type = "class")
@@ -301,6 +302,7 @@ fourth_tree_model$variable.importance
 the second model predictions which shows an 95% which shows that even despite the removal of the TOP_20_last parameter it is still relatively easy to predict the Top_20 with a past and future knowledge(unlike the second model).
 
 ```{r fourth_model_predict}
+
 test_data_rand$Top_20 <- as.factor(test_data_rand$Top_20)
 # Predict class labels (Top_20) for test_data
 predictions <- predict(fourth_tree_model, newdata = test_data_rand, type = "class")
@@ -319,9 +321,6 @@ cat("Test Accuracy:", round(accuracy, 4), "\n")
 in this section we created two logistical regression models which differ in the  test and train data they recieve.
 
 ```{r data_cleaning_logistical_regression}
-# Load required libraries
-library(dplyr)
-library(caret)
 
 null_countries <- c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana",
                     "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
@@ -344,10 +343,6 @@ sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,
 train  <- happiness_data[sample, ]
 test   <- happiness_data[!sample, ]
 
-
-
-
-
 cols <- c("Log_GDP", "Social_support", "Life_expectancy", "Freedom_of_choices", "Generosity", "Corruption", "Dystopia_and_residual")
 
 predictors <- paste(cols, collapse = " + ")
@@ -356,7 +351,6 @@ log_formula
 
 logmodel <- glm(log_formula,
              data = train, family = "binomial")
-#summary(logmodel)
 
 probs <- predict(logmodel, newdata = test, type = "response")
 preds <- ifelse(probs > 0.5, 1, 0)
