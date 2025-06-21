@@ -407,25 +407,27 @@ cat("Test Accuracy:", round(accuracy, 4), "\n")
 
 in this section we created two logistical regression models which differ in the  test and train data they recieve.
 
+```{r}
+# Load required libraries
+library(dplyr)
+library(caret)
+
+# Optional: Remove countries with missing/incomplete data
+null_countries <- c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana",
+                    "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
+
+happiness_data <- happiness_data %>%
+  filter(!(Country_name %in% null_countries))
+```
+
 *first model*
 the first model uses a randomly split data and tries to use logistical regression to determine whether a country is in the top 20.
 this model is to successful at 97.5% accuracy deeming it ineffective and unreliable. 
 
+
 ```{r logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
-## removing null countries
-
-null_countries = c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana", "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
-happiness_data<-happiness_data %>% filter(!(Country_name %in% null_countries))
-# happiness_data
-
-## logistic regression example
-
-
 
 set.seed(123)
-
-# renamed to Corruption for simplicity.
-# happiness_data <- happiness_data %>% rename(Corruption = `Explained by: Perceptions of corruption`)
 
 happiness_data <- happiness_data[sample(nrow(happiness_data)), ]
 sample <- sample(c(TRUE, FALSE), nrow(happiness_data), replace=TRUE, prob=c(0.8,0.2))
@@ -462,17 +464,7 @@ print(cm)
 the second model uses a timed split data(it uses all data before 2022 as train data and the rest as test data), and tries to use logistical regression to determine whether a country is in the top 20.
 this model as well is to successful at 96% accuracy deeming it ineffective and unreliable as well. 
 
-```{r logistic regression model , echo=FALSE, warning=FALSE, message=FALSE}
-# Load required libraries
-library(dplyr)
-library(caret)
-
-# Optional: Remove countries with missing/incomplete data
-null_countries <- c("Angola", "Bhutan", "Syria", "Djibouti", "Oman", "Guyana",
-                    "Puerto Rico", "Qatar", "Somaliland Region", "Suriname", "Sudan", "Syria")
-
-happiness_data <- happiness_data %>%
-  filter(!(Country_name %in% null_countries))
+```{r logistic regression model_1 , echo=FALSE, warning=FALSE, message=FALSE}
 
 # Split data by year
 train_data <- subset(happiness_data, Year < 2022)
