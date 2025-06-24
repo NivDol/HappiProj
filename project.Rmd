@@ -264,11 +264,11 @@ cat("Test Accuracy:", round(accuracy, 4), "\n")
 
 *third model*
 
-the third model training and pie chart of the factor importance
+the third model training and pie chart of the factor importance best model
 
 ```{r third_model_training}
 
-third_tree_model <- rpart(Top_25 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
+third_tree_model <- rpart(Top_25 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_chron, method = "class")
 rpart.plot(third_tree_model)
 
 importance <- third_tree_model$variable.importance
