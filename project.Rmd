@@ -26,6 +26,7 @@ library(caret)
 library(pROC)
 library(rpart.plot)
 library(readxl)  # a libary for loading excel files
+library(tibble)
 ```
 
 # Introduction
@@ -201,14 +202,14 @@ first_tree_model <- rpart(
 )
 rpart.plot(first_tree_model)# the tree
 
+importance_1 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
 
-
-pie(importance,
+pie(importance_1,
     main = "Variable Importance (Decision Tree)",
-    col = rainbow(length(importance)))
+    col = rainbow(length(importance_1)))
 # variable importance pie chart for better visual disפlay of importance
 
-importance_1 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
 
 # Print the variable importance table
 cat("Variable Importance (numeric values):\n")
@@ -334,7 +335,7 @@ the fourth model training and pie chart of the factor importance
 ```{r fourth_model_training}
 
 first_tree_model <- rpart(
-  Top_15 ~ Year + Log_GDP + Social_support + Life_expectancy +
+  Top_15 ~ Log_GDP + Social_support + Life_expectancy +
     Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual,
   data = train_data_rand,
   method = "class"
@@ -381,7 +382,7 @@ the fifth model training and pie chart of the factor importance
 ```{r fifth_model_training}
 
 # Train the decision tree using rpart
-second_tree_model <- rpart(Top_20 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
+second_tree_model <- rpart(Top_20 ~ +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
 rpart.plot(second_tree_model)
 
 importance <- second_tree_model$variable.importance
@@ -422,7 +423,7 @@ the sixth model training and pie chart of the factor importance
 
 ```{r sixth_model_training}
 
-third_tree_model <- rpart(Top_25 ~  Year +  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
+third_tree_model <- rpart(Top_25 ~  Log_GDP + Social_support + Life_expectancy +  Freedom_of_choices + Generosity + Corruption + Dystopia_and_residual             ,data = train_data_rand, method = "class")
 rpart.plot(third_tree_model)
 
 importance <- third_tree_model$variable.importance
@@ -440,7 +441,7 @@ print(round(importance_6, 2))
 
 ```
 
-the third model predictions which shows at about 94% accraucy and knowing how the model works shows that at all 3 ranges the randomized models are too sucsseful. 
+the third model predictions which shows at about 92% accraucy and knowing how the model works shows that at all 3 ranges the randomized models are too sucsseful. 
 
 ```{r sixth_model_predict}
 
@@ -501,6 +502,9 @@ predicted <- factor(test$preds, levels = c(0, 1))
 cm <- confusionMatrix(predicted, actual)
 print(cm)
 
+modimportance_1<-varImp(logmodel)
+print(modimportance_1)
+
 ```
 
 *second model* the second model uses a timed split data(it uses all data before 2022 as train data and the rest as test data), and tries to use logistical regression to determine whether a country is in the top 20. this model as well is to successful at 96% accuracy deeming it ineffective and unreliable as well.
@@ -542,7 +546,64 @@ predicted <- factor(test_data$preds, levels = c(0, 1))
 cm <- confusionMatrix(predicted, actual)
 print(cm)
 
+modimportance_2<-varImp(logmodel)
+print(modimportance_2)
+
 ```
+
+
+
+```{r summary_graphs}
+
+# chronological trees 
+importance_tree_1 <- (importance_1 + importance_2 + importance_3) / 3
+# Convert to percentages
+importance_tree_1 <- importance_tree_1 / sum(importance_tree_1) * 100
+importance_tree_1 <- round(importance_tree_1, 2)
+print(importance_tree_1)
+# random trees 
+
+importance_tree_2 <- (importance_4 + importance_5 + importance_6) / 3
+# Convert to percentages
+importance_tree_2 <- importance_tree_2 / sum(importance_tree_2) * 100
+importance_tree_2 <- round(importance_tree_2, 2)
+print(importance_tree_2)
+
+importance_log <- (modimportance_1+modimportance_2) / 2
+importance_log <- importance_log / sum(importance_log) * 100
+importance_log <- round(importance_log, 2)
+print(importance_log)
+
+#average factor importance
+#corruption = (36.28+36.11+13.24)/3=28.54
+#Dystopia_and_residual = (16.80+15.21+29.38)/3=20.46
+#Log_GDP=(7.20+12.31+21.57)/3=13.69
+#Social_support=(11.76+ 6.17+16.12)/3=11.35
+#Life_expectancy=(15.58+ 12.11+5.41)/3=11.03 
+#Freedom_of_choices=(11.24+ 12.76+4.39)/3=9.463
+#Generosity =(1.14+5.34+9.89)/3=5.56
+
+# Example data (replace with your actual vectors)
+corruption <- c(tree_1 = 36.24, tree_2 = 36.11, log = 13.24,avg=28.54)
+Dystopia_and_residual <- c(tree_1 = 16.8, tree_2 = 15.21, log = 29.38,avg=20.46)
+Log_GDP <- c(tree_1 = 7.2, tree_2 = 12.31, log = 21.57,avg=13.69)
+Social_support <- c(tree_1 = 11.76, tree_2 = 6.17, log = 16.12,avg=11.35)
+
+facet_df <- bind_rows(
+  tibble(Stat = names(corruption), Value = corruption, Group = "corruption"),
+  tibble(Stat = names(Dystopia_and_residual), Value = Dystopia_and_residual, Group = "Dystopia_and_residual"),
+  tibble(Stat = names(Log_GDP), Value = Log_GDP, Group = "Log_GDP"),
+  tibble(Stat = names(Social_support), Value = Social_support, Group = "Social_support")
+)
+ggplot(facet_df, aes(x = Stat, y = Value, fill = Stat)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ Group) +
+  theme_minimal() +
+  labs(title = "atributes by model", x = "Attribute", y = "percentage")
+```
+
+
+
 
 \newpage
 
