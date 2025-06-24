@@ -201,12 +201,19 @@ first_tree_model <- rpart(
 )
 rpart.plot(first_tree_model)# the tree
 
-importance <- first_tree_model$variable.importance# variable importance scores
+
 
 pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
-# variable importance pie chart for better visual dislay of importance
+# variable importance pie chart for better visual disפlay of importance
+
+importance_1 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_1, 2))
+
 ```
 
 the first tree model predictions had a nearly 84% accuracy which shows that the model is good and using the parameters can reliably predict if a country is in the top_15 
@@ -243,6 +250,12 @@ pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
 # variable importance pie chart for better visual dislay of importance
+
+importance_2 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_2, 2))
 ```
 
 the second model predictions which shows an 82.5% which is a good model, and shows that  we are able to predict with reliable accuracy the Top_20 factor.
@@ -277,6 +290,12 @@ pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
 # variable importance pie chart for better visual dislay of importance
+
+importance_3 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_3, 2))
 
 ```
 
@@ -328,6 +347,13 @@ pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
 # variable importance pie chart for better visual dislay of importance
+
+importance_4 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_4, 2))
+
 ```
 
 the fourth tree model predictions had a nearly 98% accuracy which is way higher than 84% of the correspending model and shows that the model is almost perfect and that the split by time is crucial for creating a good model.
@@ -364,6 +390,13 @@ pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
 # variable importance pie chart for better visual dislay of importance
+
+importance_5 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_5, 2))
+
 ```
 
 the fifth model predictions which shows at about 96% which shows like the previous model that the random models have unreliable accraucy.
@@ -398,6 +431,12 @@ pie(importance,
     main = "Variable Importance (Decision Tree)",
     col = rainbow(length(importance)))
 # variable importance pie chart for better visual dislay of importance
+
+importance_6 <- sort(first_tree_model$variable.importance, decreasing = TRUE)# variable importance scores
+
+# Print the variable importance table
+cat("Variable Importance (numeric values):\n")
+print(round(importance_6, 2))
 
 ```
 
