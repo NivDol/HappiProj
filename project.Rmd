@@ -847,11 +847,180 @@ print(new_avg_vec)
 # shared factors in top 7 
 #Log_GDP,social_support,pos_emotions,life exceptency
 ```
+```{r,average ranking db}
+country_summary <- happiness_data %>%
+  group_by(Country_name) %>%
+  summarise(
+    Years_in_DB = n(),                         # Number of records (years) per country
+    Avg_Rank = round(mean(Rank, na.rm = TRUE), 2)  # Average rank
+  ) %>%
+  arrange(Avg_Rank)  # Optional: sort by best rank
 
+# Top 20 (best average rank)
+top_20_countries_db <-head(country_summary, 20)
+top_20_continent_vec <- c("Europe","Europe","Europe","Europe","Europe","Europe", "Asia", "Oceania","North America","Oceania","Europe","Central America","Europe","Europe","North America","Europe","Europe","Europe","North America","Europe")  
+
+top_20_countries_db$Continent <- top_20_continent_vec
+top_20_countries <- head(country_summary$Country_name, 20)
+
+
+# Bottom 20 (worst average rank)
+bottom_20_countries_db <- tail(country_summary, 20)
+bottom_20_continent_vec <- c("Africa","Africa","Africa","Africa","Central America","Africa", "Africa","Africa","Africa","Africa","Africa","Africa","Africa","Asia","Africa","Africa","Africa","Asia","Africa","Africa")
+bottom_20_countries_db$Continent <- bottom_20_continent_vec
+bottom_20_countries <- tail(country_summary$Country_name, 20)
+
+print(top_20_countries_db)
+print(bottom_20_countries_db)
+
+
+# Label each group
+top_20_countries_db$Group <- "Top 20"
+bottom_20_countries_db$Group <- "Bottom 20"
+
+# Combine
+continent_data <- bind_rows(top_20_countries_db, bottom_20_countries_db)
+
+ggplot(continent_data, aes(x = Continent, fill = Continent)) +
+  geom_bar() +
+  facet_wrap(~ Group, nrow = 1) +  # facets in a row
+  labs(title = "Continent Distribution of Top 20 and Bottom 20 Countries",
+       x = "Continent", y = "Number of Countries") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none",
+    panel.spacing = unit(2, "lines"),  # adds space between panels
+    strip.background = element_rect(fill = "gray90", color = "black")
+  )
+
+
+```
+
+
+```{r, progression of log_GDP}
+#need to reclassify blue and red countries
+set.seed(122)  # for reproducibility
+
+
+random_13_top_logGDP <- sample(top_20_countries, 13)
+random_13_bottom_logGDP <- sample(bottom_20_countries, 13)
+blue_countries <- random_13_top_logGDP
+red_countries  <- random_13_bottom_logGDP
+
+selected_countries <- c(blue_countries, red_countries)
+
+print(selected_countries)
+# Filter data
+filtered_data <- happiness_data %>%
+  filter(Country_name %in% selected_countries) %>%
+  arrange(-Year)
+# Add a color group variable
+filtered_data <- filtered_data %>%
+  mutate(Group = ifelse(Country_name %in% blue_countries, "Blue", "Red"))
+
+lineplot<-ggplot(filtered_data, aes(x = Year, y = Log_GDP, color = Group, group = Country_name)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_color_manual(values = c("Blue" = "blue", "Red" = "red")) +
+  labs(title = "log GDP Over Time (Selected Countries)",
+       x = "Year", y = "log GDP Score") +
+  theme_minimal()
+lineplot
+```
+```{r, progression of social_support}
+#need to reclassify blue and red countries
+set.seed(124)  # for reproducibility
+
+
+random_13_top_social_support <- sample(top_20_countries, 13)
+random_13_bottom_social_support <- sample(bottom_20_countries, 13)
+blue_countries <- random_13_top_social_support
+red_countries  <- random_13_bottom_social_support
+
+selected_countries <- c(blue_countries, red_countries)
+
+print(selected_countries)
+# Filter data
+filtered_data <- happiness_data %>%
+  filter(Country_name %in% selected_countries) %>%
+  arrange(-Year)
+# Add a color group variable
+filtered_data <- filtered_data %>%
+  mutate(Group = ifelse(Country_name %in% blue_countries, "Blue", "Red"))
+
+lineplot<-ggplot(filtered_data, aes(x = Year, y = Social_support , color = Group, group = Country_name)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_color_manual(values = c("Blue" = "blue", "Red" = "red")) +
+  labs(title = "social support Over Time (Selected Countries)",
+       x = "Year", y = "social support Score") +
+  theme_minimal()
+lineplot
+```
+```{r, progression of pos_emotions}
+#need to reclassify blue and red countries
+set.seed(125)  # for reproducibility
+
+
+random_13_top_pos_emotions <- sample(top_20_countries, 13)
+random_13_bottom_pos_emotions <- sample(bottom_20_countries, 13)
+blue_countries <- random_13_top_pos_emotions
+red_countries  <- random_13_bottom_pos_emotions
+
+selected_countries <- c(blue_countries, red_countries)
+
+print(selected_countries)
+# Filter data
+filtered_data <- happiness_data %>%
+  filter(Country_name %in% selected_countries) %>%
+  arrange(-Year)
+# Add a color group variable
+filtered_data <- filtered_data %>%
+  mutate(Group = ifelse(Country_name %in% blue_countries, "Blue", "Red"))
+
+lineplot<-ggplot(filtered_data, aes(x = Year, y = Pos_emotions, color = Group, group = Country_name)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_color_manual(values = c("Blue" = "blue", "Red" = "red")) +
+  labs(title = "pos_emotions Over Time (Selected Countries)",
+       x = "Year", y = "pos_emotions Score") +
+  theme_minimal()
+lineplot
+```
+```{r, progression of pos_emotions}
+#need to reclassify blue and red countries
+set.seed(126)  # for reproducibility
+
+
+random_13_top_life_expectancy <- sample(top_20_countries, 13)
+random_13_bottom_life_expectancy <- sample(bottom_20_countries, 13)
+blue_countries <- random_13_top_life_expectancy
+red_countries  <- random_13_bottom_life_expectancy
+
+selected_countries <- c(blue_countries, red_countries)
+
+print(selected_countries)
+# Filter data
+filtered_data <- happiness_data %>%
+  filter(Country_name %in% selected_countries) %>%
+  arrange(-Year)
+# Add a color group variable
+filtered_data <- filtered_data %>%
+  mutate(Group = ifelse(Country_name %in% blue_countries, "Blue", "Red"))
+
+lineplot<-ggplot(filtered_data, aes(x = Year, y = Life_expectancy, color = Group, group = Country_name)) +
+  geom_line(size = 1) +
+  geom_point() +
+  scale_color_manual(values = c("Blue" = "blue", "Red" = "red")) +
+  labs(title = "life_expectancy Over Time (Selected Countries)",
+       x = "Year", y = "life_expectancy Score") +
+  theme_minimal()
+lineplot
+```
 
 ```{r, progression of corruption}
 #need to reclassify blue and red countries
-#niv idea- green countries are 15 countries with best average rank and red countries with worst average rating.
 
 blue_countries <- c("Sweden", "Denmark", "New Zealand", "Israel", "Ireland")
 red_countries  <- c("Madagascar", "Zambia", "Ethiopia", "Sri Lanka", "Bangladesh")
